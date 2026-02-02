@@ -1,0 +1,468 @@
+
+================================================================================
+
+🔍 AMAZON ML CHALLENGE 2025 - DATA AUDIT REPORT
+
+================================================================================
+
+GCS Bucket: amazon_ml_challenge_data
+
+Train Images: gs://amazon_ml_challenge_data/dataset/images/train
+
+Test Images: gs://amazon_ml_challenge_data/dataset/images/test
+
+================================================================================
+
+
+
+✅ Libraries imported successfully!
+
+
+
+🔗 Connecting to Google Cloud Storage...
+
+✅ Successfully connected to GCS!
+
+📂 Found folders: ['images', 'test.csv', 'train.csv']
+
+
+
+
+
+================================================================================
+
+📊 SECTION 1: CSV FILES VALIDATION
+
+================================================================================
+
+
+
+🔍 1.1 ANALYZING TRAIN.CSV
+
+--------------------------------------------------------------------------------
+
+
+
+Loading train.csv...
+
+✅ Loaded successfully!
+
+
+
+A. BASIC COUNTS:
+
+   Total rows: 75,000
+
+   Total columns: 4
+
+   Column names: ['sample_id', 'catalog_content', 'image_link', 'price']
+
+   Expected columns: ['sample_id', 'catalog_content', 'image_link', 'price']
+
+   ✅ All expected columns present
+
+
+
+Data types:
+
+sample_id            int64
+
+catalog_content     object
+
+image_link          object
+
+price              float64
+
+dtype: object
+
+
+
+B. MISSING VALUES:
+
+   sample_id: 0 missing (0.00%) ❌ CRITICAL!
+
+   catalog_content: 0 missing (0.00%) ✅
+
+   image_link: 0 missing (0.00%) ✅
+
+   price: 0 missing (0.00%) ❌ CRITICAL!
+
+
+
+C. TARGET VARIABLE (PRICE):
+
+   Count: 75,000
+
+   Mean: ₹23.65
+
+   Median: ₹14.00
+
+   Min: ₹0.13
+
+   Max: ₹2,796.00
+
+   Std: ₹33.38
+
+
+
+   Negative prices: 0 ✅
+
+   Zero prices: 0 ✅
+
+   Skewness: 13.60 (Highly skewed - LOG TRANSFORM RECOMMENDED!)
+
+
+
+D. SAMPLE IDs:
+
+   Total sample_ids: 75,000
+
+   Unique sample_ids: 75,000
+
+   Duplicate sample_ids: 0 ✅
+
+   Min ID: 0
+
+   Max ID: 299438
+
+
+
+E. IMAGE URLs:
+
+   Total URLs: 75,000
+
+   Unique URLs: 72,288
+
+   Duplicate URLs: 2,712 (3.62%)
+
+   HTTP URLs: 75,000
+
+   HTTPS URLs: 75,000
+
+   Amazon domain URLs: 75,000 (100.0%)
+
+
+
+   Sample URLs (first 3):
+
+      1. https://m.media-amazon.com/images/I/51mo8htwTHL.jpg...
+
+      2. https://m.media-amazon.com/images/I/71YtriIHAAL.jpg...
+
+      3. https://m.media-amazon.com/images/I/51+PFEe-w-L.jpg...
+
+
+
+F. CATALOG CONTENT:
+
+   Average text length: 909 characters
+
+   Min text length: 32
+
+   Max text length: 7894
+
+   Median text length: 643
+
+   Empty strings: 0 ✅
+
+   Very short (<10 chars): 0 ✅
+
+
+
+
+
+🔍 1.2 ANALYZING TEST.CSV
+
+--------------------------------------------------------------------------------
+
+
+
+Loading test.csv...
+
+✅ Loaded successfully!
+
+
+
+A. BASIC COUNTS:
+
+   Total rows: 75,000
+
+   Total columns: 3
+
+   Column names: ['sample_id', 'catalog_content', 'image_link']
+
+   Expected columns: ['sample_id', 'catalog_content', 'image_link']
+
+   ✅ No price column (as expected)
+
+
+
+B. MISSING VALUES:
+
+   sample_id: 0 missing (0.00%) ❌ CRITICAL!
+
+   catalog_content: 0 missing (0.00%) ✅
+
+   image_link: 0 missing (0.00%) ✅
+
+
+
+C. SAMPLE IDs:
+
+   Total sample_ids: 75,000
+
+   Unique sample_ids: 75,000
+
+   Duplicate sample_ids: 0 ✅
+
+   Overlap with train: 0 IDs ✅
+
+   Min ID: 1
+
+   Max ID: 299439
+
+
+
+D. IMAGE URLs:
+
+   Total URLs: 75,000
+
+   Unique URLs: 72,222
+
+   Duplicate URLs: 2,778 (3.70%)
+
+   Amazon domain URLs: 75,000 (100.0%)
+
+
+
+E. CATALOG CONTENT:
+
+   Average text length: 911 characters
+
+   Min text length: 37
+
+   Max text length: 11136
+
+
+
+   Comparison with train:
+
+   Train avg length: 909
+
+   Test avg length: 911
+
+   Difference: 0.2% ✅
+
+
+
+
+
+================================================================================
+
+📸 SECTION 2: IMAGE FILES VALIDATION
+
+================================================================================
+
+
+
+🔍 2.1 TRAIN IMAGES IN GCS
+
+--------------------------------------------------------------------------------
+
+
+
+A. FILE COUNT:
+
+Counting files in GCS (this may take 1-2 minutes)...
+
+   Total files in GCS: 74,999
+
+   CSV rows: 75,000
+
+   Unique URLs in CSV: 72,288
+
+   Difference: 1 files
+
+   ⚠️  MISSING 1 images!
+
+
+
+B. FILE NAMING:
+
+   Sample filenames (first 5):
+
+      1. 0.jpg
+
+      2. 10000.jpg
+
+      3. 100000.jpg
+
+      4. 100004.jpg
+
+      5. 100011.jpg
+
+   Pattern: Numeric (likely sample_id)
+
+
+
+C. MISSING IMAGES:
+
+Creating sample_id to filename mapping...
+
+   Missing images: 1 (0.00%)
+
+   Missing sample_ids:
+
+      - 279285
+
+
+
+D. CORRUPTED IMAGES CHECK:
+
+Testing random 100 images...
+
+Testing images: 100%
+
+
+
+ 100/100 [02:23<00:00,  1.16s/it]
+
+   Tested: 100 images
+
+   Corrupted/Invalid: 0 ✅
+
+
+
+E. IMAGE QUALITY:
+
+   Average file size: 294.1 KB
+
+   Min file size: 4.2 KB
+
+   Max file size: 1661.7 KB
+
+   Average dimensions: 1696x1848 pixels
+
+   Min dimensions: 144x144 pixels
+
+   Max dimensions: 2560x2560 pixels
+
+
+
+
+
+🔍 2.2 TEST IMAGES IN GCS
+
+--------------------------------------------------------------------------------
+
+
+
+Counting test files...
+
+   Total files in GCS: 74,999
+
+   CSV rows: 75,000
+
+   Difference: 1 files
+
+   ⚠️  MISSING 1 images!
+
+
+
+
+
+================================================================================
+
+🔄 SECTION 3: TRAIN-TEST CONSISTENCY
+
+================================================================================
+
+
+
+A. SAMPLE ID RANGES:
+
+   Train IDs: 0 to 299438
+
+   Test IDs: 1 to 299439
+
+   Overlap: 0 IDs ✅
+
+
+
+B. IMAGE URL DOMAINS:
+
+   Train top domains:
+
+      m.media-amazon.com: 75,000 URLs
+
+   Test top domains:
+
+      m.media-amazon.com: 75,000 URLs
+
+
+
+C. CATALOG CONTENT FORMAT:
+
+   Train text length: mean=909, median=643
+
+   Test text length: mean=911, median=636
+
+   Distribution similarity: p-value=0.5845 ✅ Similar
+
+
+
+
+
+================================================================================
+
+🚨 SECTION 4: CRITICAL ISSUES & RECOMMENDATIONS
+
+================================================================================
+
+
+
+🟡 [HIGH] 1 missing train images
+
+🟡 [HIGH] 1 missing test images
+
+🟢 [MEDIUM] Price highly skewed - LOG TRANSFORM recommended
+
+🟢 [LOW] 2712 duplicate image URLs (normal for e-commerce)
+
+
+
+================================================================================
+
+📊 FINAL AUDIT SUMMARY
+
+================================================================================
+
+Train samples: 75,000
+
+Test samples: 75,000
+
+Train images available: 74,999 (100.0%)
+
+Test images available: 74,999 (100.0%)
+
+Critical issues: 0
+
+High priority issues: 2
+
+
+
+================================================================================
+
+⚠️  NO-GO DECISION: Fix critical/high issues before proceeding!
+
+================================================================================
+
+
+
+🎉 AUDIT COMPLETE! Review findings above.
+
+
+
+
+
+

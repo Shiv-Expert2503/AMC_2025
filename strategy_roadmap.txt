@@ -1,0 +1,242 @@
+My apporach:
+
+Instead of predicting price, we will predict log(1 + price).
+
+Why? The properties of logarithms mean that minimizing the squared error of log(price) is very similar to minimizing the relative or percentage error of the price itself. This naturally aligns our model's objective with the SMAPE metric.
+
+How?
+
+In your training data, create a new target column: log_price = np.log1p(df['price']).
+
+Train your model to predict log_price.
+
+When you make predictions on the test set, your model will output log_price_pred.
+
+Convert these predictions back to the original scale for the submission file: price_pred = np.expm1(log_price_pred).
+
+
+
+
+---------------------------------------------------------------------------
+1. Image Download (Parallel)
+2. IMAGE FEATURES (6-12 hours)
+	A. Vision Transformer Features (768-dim)
+	B. OCR Text Extraction (bonus features)
+	
+	(	Output:
+	train_vit_features.npy → (75000, 768)
+	test_vit_features.npy → (75000, 768)
+	Updated CSVs with OCR text column
+	)
+3. TEXT FEATURES (12-18 hours)
+	A. Sentence Embeddings (384-dim)
+	B. Hand-Crafted Features with REGEX 
+	C. TF-IDF (Optional but Recommended)
+
+4. FEATURE COMBINATION (18-20 hours)
+	4.1 Combine All Features
+	4.2 Target Transformation(log)
+	
+5. Model Training
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+pro move:
+The Ultimate Pro-Move: For the absolute best performance, top teams often ensemble the features from a ViT and a powerful CNN. Since they learn different types of patterns, their combined features are even more powerful. But for now, starting with just ViT is a perfect plan.
+
+More Powerful Alternative: Models like all-mpnet-base-v2 or DeBERTa are more powerful and might give you a slight edge in performance. However, they are significantly slower to run on 75k+ samples.
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+Reality Check:
+
+AIR1 depends 80% on feature engineering + ensemble
+
+Only 20% on model size
+
+ViT-Base extracts 95% of visual information
+
+ViT-Large extracts 97% (marginal gain)
+
+Your time better spent on text features + models!
+
+--------------------
+Final Features Vector = [
+    ViT_embeddings (768), (Done)
+    YOLO_features (10),
+    OCR_features (15),
+    ResNet_category (512),
+    Image_quality (8),
+    SBERT_embeddings (384),
+    TF-IDF (500),
+    Engineered_features (30),
+    Outlier_features (5)
+] = ~2200 total features
+
+
+
+
+Cross models Features:
+- unit_size_match (OCR extracted unit == text unit?) 
+- object_count_match (YOLO count == text mention of "2-pack"?)
+- category_consistency (image category == text category?)
+- brand_visibility (brand in text == brand visible in image OCR?)
+
+
+
+
+OCR for Text Extraction 
+
+Extracts unit info: "8 oz", "20 pack", "500 ml", "1 gallon"
+Finds brand names on packaging → Brand correlates with price
+Detects price/quantity text → "Buy 2 Get 1", "$5 OFF", "Family Size"
+Captures product variants → "Organic", "Premium", "Value Pack"
+
+Critical Insight:​
+
+Your TerraVita outliers all have text on packaging clearly stating unit size​
+OCR can extract "4 oz", "8 oz" → Direct price predictor (4oz=$15, 8oz=$30 pattern)
+90% of products have readable text on packaging​
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+HDBSCAN
+s3://amazon-ml-challenge-yourname/features/train_complete_50d.csv
+s3://amazon-ml-challenge-yourname/features/test_complete_50d.csv
+
+CLIP
+----
+'features/train_clip_features.csv'
+'features/test_clip_features.csv'
+
+IMAGES_Embeddings
+-----
+s3://amazon-ml-challenge-yourname/mappings/test_with_embeddings.csv
+s3://amazon-ml-challenge-yourname/mappings/train_with_embeddings.csv
+
+YOLO
+------
+s3://amazon-ml-challenge-yourname/features/test_yolo_features.csv
+s3://amazon-ml-challenge-yourname/features/train_yolo_features.csv
+
+TEXT Embeddings:
+s3://amazon-ml-challenge-yourname/text_embeddings/test_text_and_tabular_features.csv
+s3://amazon-ml-challenge-yourname/text_embeddings/train_text_and_tabular_features.csv
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Features to Extract:​
+
+text
+- text_on_image (string)
+- detected_unit_size (float: oz, ml, count extracted)
+- detected_unit_type (categorical: ounce, milliliter, count, gram)
+- brand_name_visible (bool)
+- promotional_text_present (bool: "sale", "discount", "value")
+- text_area_percentage (how much of image is text)
+
+Object detection:
+Features to extract:
+object_count: Total detections per image (ignore YOLO's class labels)
+bounding_box_coverage: Sum of all bbox areas / total image area
+max_confidence_score: Highest detection confidence
+largest_object_ratio: Largest bbox area / image area (for dominant object)
+avg_box_size: Average detection area
+box_count_bins: Categorical (1 item, 2-3 items, 4-5 items, 6+ items)
+
+- Leverage CLIP for Price-Relevant Signals
+Multi-object indicators:
+clip_visual_complexity: Entropy of clip probability distribution (higher = more ambiguous/multi-item)
+is_bulk_pack: Flag if object_count > 3 AND clip_category in [beverage, packaged, snack]
+Brand/premium signals from CLIP confidence:
+High clip_confidence + specific categories (beauty, health) → premium pricing
+Low clip_top2_diff → generic/store brand → lower price
+
+-Phase 3: Text Features WITHOUT OCR (Hybrid Approach)
+Option A: CLIP Text Embeddings (5 min inference time)
+Use CLIP's text encoder on your existing product descriptions from CSV to extract:
+Text-based unit indicators ("pack", "oz", "count", "gallon")
+Brand strength score (match against known premium brands)
+Promotional keywords ("value", "family size", "bulk")
+
+
+
+
+DONE
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Product Category Classification (ResNet/EfficientNet)​ Now done by CLIP see below
+Different product categories have vastly different price distributions
+Food/Beverage (your TerraVita cluster): $10-100 range​
+Electronics: $50-5000 range
+Books: $5-50 range
+Beauty/Health: $5-200 range
+
+Approach:​
+Fine-tune ResNet50 or EfficientNet-B0 on your training images
+Classify into 10-15 broad categories
+Use catalog_content text as pseudo-labels for training
+
+Features to Extract:​
+- product_category_from_image (categorical: Food, Electronics, Books, etc.)
+- category_confidence_score (float)
+- is_food_beverage (bool) - most important for your dataset
+- is_packaged_food (bool) - your outlier cluster
+
+
+ADD a CLIP Zero-Shot Step: Instead of fine-tuning a ResNet, create a new script that uses a pre-trained CLIP or SigLIP model. Feed it your images and your 16 class names.
+
+New Features to Create:
+
+clip_category: The top predicted class from CLIP (e.g., 'Beverage').
+
+clip_confidence: The confidence score for that prediction.
+
+You can even add the probabilities for all 16 classes as 16 new features.
+
+
+Engeneering features:
+- price_per_unit (if unit extractable)
+- text_complexity (reading level score)
+- num_product_features (count of bullet points)
+- seller_professionalism_score (image quality + text quality combined)
+
+Outlier Features:
+- is_terravita_product (bool: 90% of outliers)
+- is_pouch_packaging (bool)
+- is_loose_tea (bool: specific subcategory)
+- outlier_cluster_distance (float: distance from cluster center)
+- color_similarity_to_terravita (float: yellow/gold dominance)
+
+General Clustering Feature
+- HDBSCAN on your 768-dimensional ViT embeddings. This might uncover other, less obvious groups (e.g., a "books" cluster, a "clothing" cluster, a "kitchenware" cluster). The cluster ID for each product becomes a powerful categorical feature.
+
+
+
+
+Run yolo for : Object Detection (YOLO): image_item_count & detected_object_class
+New Features to Create:
+- object_count: The number of items YOLO detected in the image.
+- dominant_object_class: The class of the largest object detected (e.g., 'bottle', 'box', 'shirt'). This is your product_category_from_image.
+- max_confidence_score (float)
+- bounding_box_coverage (% of image covered by products)
+- object_count_from_text vs object_count_from_vision (consistency check)
+(Bulk packs (multiple items) → Higher price
+Single units → Lower price
+TerraVita pouches (your outliers) → Often single 4-8oz units (~$15-70)​
+Example: Detecting "20-pack" vs "single" from image alone)
+
+
+
+
+TEXT
+---------------------------------
+Missing Feature        |  Why It Matters                                    |  Priority      
+-----------------------+----------------------------------------------------+----------------
+Promotional keywords   |  "value", "family size", "bulk" → affects pricing  |  HIGH          
+Premium brand flags    |  "organic", "premium", "artisan" → higher prices   |  HIGH          
+Multi-pack indicators  |  Beyond IPQ - visual cues like "variety pack"      |  MEDIUM        
+Size descriptors       |  "jumbo", "mini", "travel size" → price modifiers  |  MEDIUM        
+
+
+Feature Category        |  Missing Features                                 |  Priority  |  Runtime
+------------------------+---------------------------------------------------+------------+---------
+Keyword flags           |  is_organic,is_premium,is_bulk_pack,is_imported   |  HIGH      |  5 min  
+Brand tier              |  brand_tier(luxury/mid/budget classification)     |  HIGH      |  10 min 
+Advanced NLP            |  num_bullet_points(count of "- " or line breaks)  |  LOW       |  2 min  
+Alternative embeddings  |  TF-IDF (500d), Word2Vec (300d)                   |  LOW       |  20 min 
